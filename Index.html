@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sev-1 Notifier — Avaya Enterprise</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --avaya-red: #CC0000;
+    --avaya-red-dark: #A30000;
+    --avaya-red-light: #FCEBE8;
+    --avaya-dark: #0F1720;
+    --slate-800: #1B2733;
+    --slate-700: #263341;
+    --slate-500: #5A6B80;
+    --slate-300: #94A3B5;
+    --slate-100: #E7ECF1;
+    --paper: #F4F6F8;
+    --white: #FFFFFF;
+    --sev1: #CC0000;
+    --sev1-bg: #FCEBE8;
+    --sev2: #C77E1E;
+    --sev2-bg: #FDF3E3;
+    --ok: #2E7D4F;
+    --ok-bg: #E7F5EC;
+    --whatsapp-green: #25D366;
+    --whatsapp-chat-bg: #E5DDD5;
+    --mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', Menlo, Courier, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100vh; width: 100vw; background: var(--paper); font-family: var(--sans); color: var(--avaya-dark); -webkit-font-smoothing: antialiased; }
+
+  /* Full Screen Login Overlay Guard */
+  #authScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, var(--avaya-dark) 0%, #1B2A3D 100%);
+    padding: 24px;
+    z-index: 999999;
+  }
+
+  .auth-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+    border-top: 4px solid var(--avaya-red);
+  }
+  .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .auth-brand-mark {
+    width: 40px; height: 40px; border-radius: 6px; background: var(--avaya-red);
+    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: var(--white);
+  }
+  .auth-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; color: var(--avaya-dark); }
+  .auth-sub { font-size: 13px; color: var(--slate-500); margin-bottom: 26px; line-height: 1.5; }
+  .auth-field-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--slate-500); margin-bottom: 6px; }
+  .auth-input { width: 100%; font-family: var(--sans); font-size: 14px; padding: 12px 14px; border: 1px solid var(--slate-100); border-radius: 6px; margin-bottom: 12px; }
+  .auth-btn { width: 100%; font-family: var(--sans); font-weight: 800; font-size: 14.5px; padding: 13px 18px; border-radius: 6px; border: none; cursor: pointer; background: var(--avaya-red); color: var(--white); }
+  .auth-btn:hover { background: var(--avaya-red-dark); }
+  .auth-error { font-size: 12.5px; color: var(--avaya-red); margin-bottom: 10px; min-height: 16px; font-weight: 600; }
+
+  /* App Workspace Styling */
+  .topbar {
+    background: var(--avaya-dark);
+    color: var(--white);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--avaya-red);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    background: var(--avaya-red);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans); font-weight: 900; font-size: 13px; color: var(--white);
+    flex-shrink: 0;
+  }
+  .brand-sub { color: var(--slate-300); font-weight: 400; font-size: 12px; margin-left: 6px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--slate-300); flex-wrap: wrap; justify-content: flex-end; }
+  
+  .nav-btn {
+    background: none; border: 1px solid var(--slate-700); color: var(--white);
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    padding: 7px 13px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap; transition: all 0.15s ease-in-out;
+  }
+  .nav-btn:hover { background: var(--slate-800); border-color: var(--slate-500); }
+  .nav-btn.primary-nav { background: var(--avaya-red); border-color: var(--avaya-red); }
+  .nav-btn.primary-nav:hover { background: var(--avaya-red-dark); border-color: var(--avaya-red-dark); }
+  
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--slate-800); padding: 5px 11px; border-radius: 20px;
+    font-size: 11.5px; font-family: var(--mono); white-space: nowrap;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+
+  .shell { display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 57px); }
+  .sidebar {
+    background: var(--white);
+    border-right: 1px solid var(--slate-100);
+    padding: 20px 0;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 0 20px 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-title { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-500); }
+  .count-badge { font-family: var(--mono); font-size: 11px; background: var(--sev1-bg); color: var(--sev1); padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+
+  .incident-card {
+    padding: 14px 20px;
+    border-left: 4px solid transparent;
+    border-bottom: 1px solid var(--slate-100);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .incident-card:hover { background: var(--paper); }
+  .incident-card.active { background: #FDF4F4; border-left-color: var(--avaya-red); }
+  .incident-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .sev-badge {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 800;
+    padding: 2px 7px; border-radius: 4px; letter-spacing: 0.03em;
+  }
+  .sev-badge.sev1 { background: var(--sev1-bg); color: var(--sev1); }
+  .sev-badge.sev2 { background: var(--sev2-bg); color: var(--sev2); }
+  .incident-id { font-family: var(--mono); font-size: 11px; color: var(--slate-500); }
+  .incident-title { font-size: 13.5px; font-weight: 700; color: var(--avaya-dark); margin-bottom: 4px; line-height: 1.35; }
+  .incident-meta { font-size: 11.5px; color: var(--slate-500); display: flex; align-items: center; gap: 6px; }
+  .src-tag {
+    font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+    background: var(--slate-100); color: var(--slate-700); padding: 1px 6px; border-radius: 3px; font-weight: 600;
+  }
+
+  .main { padding: 26px 34px; max-width: 980px; }
+  .breadcrumb { font-size: 12px; color: var(--slate-500); margin-bottom: 10px; font-family: var(--mono); }
+  .main-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; gap: 20px; }
+  .main-title { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 6px 0; color: var(--avaya-dark); }
+  .main-sub { font-size: 13.5px; color: var(--slate-500); display: flex; gap: 14px; flex-wrap: wrap; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--white); border: 1px solid var(--slate-100); border-radius: 8px;
+    padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 18px;
+  }
+  .kpi-card.p1 { border-left: 5px solid var(--avaya-red); }
+  .kpi-card.p2 { border-left: 5px solid var(--sev2); }
+  .kpi-val { font-size: 36px; font-weight: 900; font-family: var(--mono); line-height: 1; }
+  .kpi-card.p1 .kpi-val { color: var(--avaya-red); }
+  .kpi-card.p2 .kpi-val { color: var(--sev2); }
+  .kpi-title { font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--avaya-dark); letter-spacing: 0.05em; }
+  .kpi-desc { font-size: 12px; color: var(--slate-500); margin-top: 3px; }
+
+  .segment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 10px; }
+  .segment-col {
+    background: var(--white); border: 1px solid var(--slate-100); border-radius: 8px;
+    padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); border-top: 3px solid var(--avaya-dark);
+  }
+  .segment-col.ms { border-top-color: var(--avaya-red); }
+  .segment-col.gss { border-top-color: #0A5FA8; }
+  .segment-col.infinity { border-top-color: #5B3FBF; }
+  .segment-header { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--avaya-dark); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .segment-count { font-family: var(--mono); font-size: 11px; background: var(--paper); padding: 2px 7px; border-radius: 10px; color: var(--slate-500); }
+
+  .company-card-item {
+    background: var(--paper); border: 1px solid var(--slate-100); border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px;
+  }
+  .company-card-item:last-child { margin-bottom: 0; }
+  .company-name { font-weight: 700; color: var(--avaya-dark); margin-bottom: 3px; }
+  .company-id-label { font-family: var(--mono); font-size: 10.5px; color: var(--slate-500); word-break: break-all; }
+
+  .timer-box {
+    background: var(--avaya-dark); color: var(--white);
+    border-radius: 8px; padding: 14px 20px; text-align: center; min-width: 168px; border-top: 3px solid var(--avaya-red);
+  }
+  .timer-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate-300); margin-bottom: 4px; font-weight: 700; }
+  .timer-value { font-family: var(--mono); font-size: 26px; font-weight: 700; }
+  .timer-value.urgent { color: #FF8A73; }
+
+  .card {
+    background: var(--white); border: 1px solid var(--slate-100); border-radius: 8px;
+    padding: 22px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--slate-500); }
+
+  .field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; margin-bottom: 4px; }
+  .field { font-size: 13px; }
+  .field-k { color: var(--slate-500); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; font-weight: 700; }
+  .field-v { font-family: var(--mono); font-size: 13px; color: var(--avaya-dark); font-weight: 600; }
+
+  .btn {
+    font-family: var(--sans); font-weight: 700; font-size: 13.5px;
+    padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--avaya-red); color: var(--white); }
+  .btn-primary:hover { background: var(--avaya-red-dark); }
+  .btn-secondary { background: var(--slate-100); color: var(--avaya-dark); }
+  .btn-secondary:hover { background: #DCE3EA; }
+  .btn-danger { background: var(--sev1-bg); color: var(--sev1); }
+  .btn-danger:hover { background: #F8D7D0; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .draft-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .draft-tab {
+    font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 6px;
+    background: var(--paper); color: var(--slate-500); cursor: pointer; border: 1px solid var(--slate-100);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .draft-tab.active-email { background: #EAF1FB; color: #0A5FA8; border-color: #B2D1F5; }
+  .draft-tab.active-wa { background: #E7FCEB; color: #0B6623; border-color: #A3E9B5; }
+
+  .draft-box {
+    border: 1px solid var(--slate-100); border-radius: 8px; padding: 16px;
+    font-family: var(--mono); font-size: 13px; line-height: 1.65; color: var(--avaya-dark);
+    background: var(--paper); min-height: 140px; white-space: pre-wrap;
+  }
+  .draft-box.empty { color: var(--slate-300); font-family: var(--sans); font-style: italic; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .draft-box[contenteditable="true"]:focus { outline: 2px solid var(--avaya-red); outline-offset: 2px; background: var(--white); }
+
+  .wa-preview-container {
+    background: var(--whatsapp-chat-bg);
+    border-radius: 8px; padding: 16px; border: 1px solid #D1C7BD; margin-bottom: 12px;
+  }
+  .wa-message-bubble {
+    background: #FFFFFF; border-radius: 0 8px 8px 8px; padding: 12px 14px;
+    max-width: 520px; font-size: 13px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .wa-header { font-weight: 800; color: var(--avaya-red); margin-bottom: 6px; font-size: 12px; border-bottom: 1px solid #F0F0F0; padding-bottom: 4px; }
+  .wa-body { white-space: pre-wrap; color: #111111; font-family: var(--sans); }
+  .wa-footer { font-size: 10px; color: #888888; text-align: right; margin-top: 6px; font-family: var(--mono); }
+  .wa-badge { display: inline-block; background: #DCF8C6; color: #075E54; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-bottom: 8px; }
+
+  .guardrail-note {
+    display: flex; align-items: flex-start; gap: 9px; margin-top: 12px;
+    font-size: 12px; color: var(--ok); background: var(--ok-bg); padding: 9px 12px; border-radius: 6px; font-weight: 600;
+  }
+
+  .action-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+  .sent-confirm { font-size: 12.5px; color: var(--ok); font-weight: 700; display: none; align-items: center; gap: 6px; }
+  .sent-confirm.show { display: inline-flex; }
+
+  .timeline { margin-top: 4px; }
+  .tl-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--slate-100); }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-time { font-family: var(--mono); font-size: 11px; color: var(--slate-500); min-width: 64px; padding-top: 1px; }
+  .tl-dot-col { display: flex; flex-direction: column; align-items: center; }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--avaya-red); margin-top: 4px; }
+  .tl-text { font-size: 13px; color: var(--avaya-dark); }
+  .tl-text b { font-weight: 700; }
+
+  .recipients-box { border: 1px solid var(--slate-100); border-radius: 8px; padding: 14px 16px; margin-top: 14px; background: var(--paper); }
+  .recipients-box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .recipients-box-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--slate-500); }
+  .manage-link { font-size: 12px; font-weight: 700; color: var(--avaya-red); background: none; border: none; cursor: pointer; padding: 0; }
+  .manage-link:hover { text-decoration: underline; }
+  .recipient-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--slate-100); font-size: 13px; }
+  .recipient-row:last-child { border-bottom: none; }
+  .recipient-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--avaya-red); cursor: pointer; }
+  .recipient-name { font-weight: 700; flex: 0 0 auto; min-width: 130px; }
+  .recipient-detail { font-family: var(--mono); font-size: 12px; color: var(--slate-500); flex: 1; }
+  .tag { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 10px; }
+  .tag.internal { background: #E7ECF1; color: var(--slate-700); }
+  .tag.external { background: #FCEBE8; color: var(--avaya-red); }
+
+  .company-chip {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11px; background: var(--slate-100); 
+    color: var(--avaya-dark); padding: 3px 8px; border-radius: 4px; margin: 2px 4px 2px 0; font-family: var(--mono);
+  }
+  .company-chip .remove-btn { color: var(--avaya-red); cursor: pointer; font-weight: 800; }
+
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 32, 0.65); display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+  }
+  .modal-box {
+    background: var(--white); border-radius: 10px; padding: 28px; max-width: 480px; width: 90%;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3); border-top: 5px solid var(--avaya-red);
+  }
+  .modal-title { font-size: 18px; font-weight: 800; color: var(--avaya-dark); margin-bottom: 8px; }
+  .modal-sub { font-size: 13px; color: var(--slate-500); margin-bottom: 20px; line-height: 1.5; }
+
+  .dashboard-wrap, .settings-wrap, .search-wrap, .admin-wrap { padding: 26px 34px; max-width: 980px; }
+  .search-title, .settings-title { font-size: 22px; font-weight: 800; margin: 0 0 6px 0; color: var(--avaya-dark); }
+  .search-sub, .settings-sub { font-size: 13.5px; color: var(--slate-500); }
+
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .mode-btn {
+    font-family: var(--sans); font-size: 12.5px; font-weight: 700; padding: 8px 16px;
+    border-radius: 20px; border: 1px solid var(--slate-100); background: var(--white);
+    color: var(--slate-500); cursor: pointer; transition: all 0.15s;
+  }
+  .mode-btn.active { background: var(--avaya-dark); border-color: var(--avaya-dark); color: var(--white); }
+
+  .search-form { display: flex; gap: 10px; margin-bottom: 12px; }
+  .search-form input[type="text"], .search-form select {
+    font-family: var(--sans); font-size: 13.5px; padding: 11px 14px;
+    border: 1px solid var(--slate-100); border-radius: 6px; background: var(--white);
+  }
+  .search-form input[type="text"] { flex: 1; font-family: var(--mono); }
+
+  .result-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--slate-100); border-radius: 8px; margin-bottom: 8px; background: var(--white); }
+  .result-main { flex: 1; }
+  .result-title { font-size: 13.5px; font-weight: 700; }
+  .result-meta { font-size: 12px; color: var(--slate-500); }
+
+  .add-contact-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; margin-top: 14px; }
+  .add-contact-form input, .add-contact-form select {
+    font-family: var(--sans); font-size: 13px; padding: 9px 12px; border: 1px solid var(--slate-100); border-radius: 6px; background: var(--white);
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--avaya-dark); color: var(--white); padding: 11px 22px; border-radius: 6px;
+    font-size: 13px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    display: none; align-items: center; gap: 8px; z-index: 100000; border-left: 4px solid var(--avaya-red);
+  }
+  .toast.show { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- Login Overlay Screen -->
+<div id="authScreen"></div>
+
+<!-- Authenticated Application Workspace -->
+<div id="appRoot" style="display:none;">
+<div class="topbar">
+  <div class="brand" onclick="openDashboard()">
+    <div class="brand-mark">A</div>
+    Sev-1 Notifier
+    <span class="brand-sub">Avaya Enterprise Notification Suite</span>
+  </div>
+  <div class="topbar-right" id="topbarRight">
+    <button class="nav-btn primary-nav" onclick="openDashboard()">📊 Dashboard</button>
+    <button class="nav-btn" id="fetchIncidentBtn" onclick="openSearch()">🔍 Fetch Incident</button>
+    <button class="nav-btn" id="changeNotifBtn" onclick="openChangeSearch()">🛠 Change Notification</button>
+    <button class="nav-btn" id="recipientsBtn" onclick="openSettings()">⚙ Recipients</button>
+    <div class="user-menu" id="userMenu"></div>
+  </div>
+</div>
+
+<div class="shell" id="shell">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Active Queue</div>
+      <div class="count-badge" id="incidentCount">0 open</div>
+    </div>
+    <div id="incidentList"></div>
+  </div>
+
+  <div class="main" id="mainPanel"></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal Dialog Container -->
+<div id="modalOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title" id="modalMainTitle">⏰ Cadence Update Reminder</div>
+    <div class="modal-sub" id="modalReminderText">SLA Timer elapsed. Please review technical updates and send the periodic status notification to customer stakeholders.</div>
+    <div id="modalBtnContainer" style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-secondary" onclick="closeModalReminder()">Snooze (5m)</button>
+      <button class="btn btn-primary" onclick="acknowledgeReminderAndReview()">Review & Send Notification</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Standalone Company Directory Data Store
+let companyIdSeq = 1;
+const COMPANY_DIRECTORY = [
+  { id: companyIdSeq++, name: "Avaada Group", type: "MS", snowCompanyId: "SNOW-COMP-881", website: "https://avaada.com", fls: [] },
+  { id: companyIdSeq++, name: "Northbridge Retail", type: "MS", snowCompanyId: "SNOW-COMP-992", website: "https://northbridge.com", fls: [] },
+  { id: companyIdSeq++, name: "Gurugram University", type: "GSS", snowCompanyId: "", lhn: "1000203040", fls: ["0051972964", "0051972965"], website: "https://gurugramuniv.edu" },
+  { id: companyIdSeq++, name: "Meridian Logistics", type: "GSS", snowCompanyId: "", lhn: "1000506070", fls: ["1000506070"], website: "https://meridianlogistics.com" }
+];
+
+// Master User Directory
+let userIdSeq = 1;
+const USER_DIRECTORY = {
+  "Admin": { 
+    id: userIdSeq++, username: "Admin", password: "Avaya123", firstName: "System", lastName: "Administrator", email: "admin@avaya.com", phone: "+1 800 555 0100", roleId: "role-admin", status: "active", mustChangePassword: false, isSuperAdmin: true,
+    mappedCompanies: ["Avaada Group", "Gurugram University", "Meridian Logistics", "Northbridge Retail"]
+  },
+  "samir.sinha": { 
+    id: userIdSeq++, username: "samir.sinha", password: "Welcome1", firstName: "Samir", lastName: "Sinha", email: "samir.sinha@avaya.com", phone: "+91 98100 12345", roleId: "role-sdm", status: "active", mustChangePassword: true, isSuperAdmin: false,
+    mappedCompanies: ["Avaada Group", "Gurugram University", "Northbridge Retail"]
+  }
+};
+
+const ROLES = {
+  "role-sdm": { id: "role-sdm", name: "Standard SDM" },
+  "role-admin": { id: "role-admin", name: "Administrator" }
+};
+
+// Global App State Variables
+let authState = { loggedIn: false, username: null, email: null, roleId: null };
+let currentView = "dashboard";
+let adminSubTab = "onboarding";
+let currentId = null;
+let activeReminderIncidentId = null;
+let fetchSearchResults = null;
+let activeChangeDraft = null;
+let fetchSourceMode = "MS"; 
+
+const INCIDENTS = [
+  { id: "inc-1", source: "servicenow", sourceRef: "INC0012345", severity: "sev1", title: "Voice gateway cluster unresponsive — EMEA region", affectedService: "Avaya Aura Session Manager (EMEA-01)", account: "Avaada Group", owner: "Samir Sinha", status: "In Progress", startTime: "10:15", slaMinutes: 30, elapsedMinutes: 28, flId: null },
+  { id: "inc-2", source: "siebel", sourceRef: "SR-88213", severity: "sev1", title: "SBCE HA pair failover loop — customer trunk unreachable", affectedService: "SBCE HA Pair (APAC-03)", account: "Gurugram University", owner: "Samir Sinha", status: "Investigating", startTime: "11:05", slaMinutes: 30, elapsedMinutes: 12, flId: "0051972964" },
+  { id: "inc-3", source: "servicenow", sourceRef: "INC0012298", severity: "sev2", title: "IX Messaging delayed delivery — intermittent", affectedService: "IX Messaging Cluster", account: "Northbridge Retail", owner: "Samir Sinha", status: "Monitoring", startTime: "09:30", slaMinutes: 60, elapsedMinutes: 45, flId: null }
+];
+const STATE = {};
+
+INCIDENTS.forEach(inc => {
+  STATE[inc.id] = { draft: null, sentLog: [], activeChannel: "email", edited: {}, selectedRecipients: new Set() };
+});
+currentId = INCIDENTS[0].id;
+
+let contactIdSeq = 1;
+const CONTACTS = {
+  "Avaada Group": [
+    { id: contactIdSeq++, name: "Rakesh Mehta", type: "external", email: "rakesh.mehta@avaada.com", phone: "+91 98110 22334", role: "IT Director" },
+    { id: contactIdSeq++, name: "Priya Nair", type: "external", email: "priya.nair@avaada.com", phone: "+91 98200 11223", role: "NOC Lead" },
+    { id: contactIdSeq++, name: "Avaya NOC Team", type: "internal", email: "noc-alerts@avaya.com", phone: "", role: "Internal Monitor" }
+  ],
+  "Northbridge Retail": [
+    { id: contactIdSeq++, name: "Sarah Coleman", type: "external", email: "sarah.coleman@northbridgeretail.com", phone: "+44 7700 900123", role: "VP Operations" },
+    { id: contactIdSeq++, name: "Ian McAllister", type: "external", email: "ian.mcallister@northbridgeretail.com", phone: "+44 7700 900456", role: "Retail Network Lead" }
+  ],
+  "Gurugram University": [
+    { id: contactIdSeq++, name: "Dr. Anil Kapoor", type: "external", email: "anil.kapoor@gurugramuniv.edu", phone: "+91 99887 66554", role: "Head of IT" }
+  ],
+  "Meridian Logistics": [
+    { id: contactIdSeq++, name: "Tom Bradley", type: "external", email: "tom.bradley@meridianlogistics.com", phone: "+1 415 555 0142", role: "IT Manager" }
+  ]
+};
+
+const SERVICENOW_CHANGE_CATALOG = [
+  { changeNumber: "CHG0034521", title: "SMGR firmware upgrade — geo-redundant pair", account: "Avaada Group", affectedService: "System Manager (SMGR)", plannedStart: "2026-09-20 23:00", plannedEnd: "2026-09-21 02:00", riskLevel: "moderate", status: "Scheduled", owner: "Samir Sinha" }
+];
+
+const SERVICENOW_CATALOG = [
+  { sourceRef: "INC0012345", severity: "sev1", title: "Voice gateway cluster unresponsive — EMEA region", affectedService: "Avaya Aura Session Manager (EMEA-01)", account: "Avaada Group", status: "In Progress", startTime: "10:15", slaMinutes: 30 },
+  { sourceRef: "INC0012298", severity: "sev2", title: "IX Messaging delayed delivery — intermittent", affectedService: "IX Messaging Cluster", account: "Northbridge Retail", status: "In Progress", startTime: "08:55", slaMinutes: 60 }
+];
+
+const SIEBEL_CATALOG = [
+  { sourceRef: "SR-88213", severity: "sev1", title: "SBCE HA pair failover loop — customer trunk unreachable", affectedService: "SBCE HA Pair (APAC-03)", account: "Gurugram University", status: "Investigating", startTime: "09:42", slaMinutes: 30, flId: "0051972964" },
+  { sourceRef: "SR-88250", severity: "sev1", title: "G450 media gateway offline — branch site isolated", affectedService: "G450 Media Gateway (Branch-14)", account: "Meridian Logistics", status: "In Progress", startTime: "11:02", slaMinutes: 30, flId: "1000506070" }
+];
+
+function normalizeFL(flString) {
+  if (!flString) return "";
+  return flString.toString().toUpperCase().replace(/^(FL-?|LHN-?)/i, "").replace(/^0+/, "");
+}
+
+function fetchIncidentsFromReportAvaya(queryTerm) {
+  return [
+    {
+      sourceRef: "SR-" + Math.floor(100000 + Math.random() * 900000),
+      severity: "sev1",
+      title: "Outage: Core Session Manager Link Down (FL/LHN " + queryTerm + ")",
+      affectedService: "Avaya Aura Core",
+      account: "Avaya Customer Site (" + queryTerm + ")",
+      flId: queryTerm,
+      owner: "Unassigned SDM",
+      status: "Investigating",
+      startTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      slaMinutes: 30
+    }
+  ];
+}
+
+function getContacts(account) {
+  if (!CONTACTS[account]) CONTACTS[account] = [];
+  return CONTACTS[account];
+}
+
+// Login Screen Renderer
+function renderAuthScreen() {
+  document.getElementById("appRoot").style.display = "none";
+  const authEl = document.getElementById("authScreen");
+  authEl.style.display = "flex";
+  authEl.innerHTML = `
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-brand-mark">A</div>
+        <div>
+          <div style="font-weight:800; font-size:18px;">Sev-1 Notifier</div>
+          <div style="font-size:12px; color:var(--slate-500);">Avaya CSS Enterprise</div>
+        </div>
+      </div>
+      <div class="auth-title">Sign In</div>
+      <div class="auth-sub">Log in with your assigned SDM or Admin credentials.</div>
+      <div class="auth-field-label">Username</div>
+      <input type="text" class="auth-input" id="loginUsername" placeholder="Enter Username (e.g. samir.sinha or Admin)" value="">
+      <div class="auth-field-label">Password</div>
+      <input type="password" class="auth-input" id="loginPassword" placeholder="Enter Password" value="" onkeydown="if(event.key==='Enter') attemptLogin()">
+      <div class="auth-error" id="loginError"></div>
+      <button class="auth-btn" onclick="attemptLogin()">Sign In →</button>
+    </div>
+  `;
+}
+
+function attemptLogin() {
+  const usernameInput = document.getElementById("loginUsername");
+  const passwordInput = document.getElementById("loginPassword");
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+  const errEl = document.getElementById("loginError");
+
+  const user = USER_DIRECTORY[username];
+  if (!user || user.password !== password) {
+    errEl.textContent = "Invalid username or password."; return;
+  }
+  if (user.status === "revoked") {
+    errEl.textContent = "Account revoked. Contact Administrator."; return;
+  }
+
+  usernameInput.value = "";
+  passwordInput.value = "";
+  errEl.textContent = "";
+
+  completeLogin(user);
+}
+
+function completeLogin(user) {
+  authState = { loggedIn: true, username: user.username, email: user.email, roleId: user.roleId, name: `${user.firstName} ${user.lastName}`, userId: user.id };
+  currentView = "dashboard";
+  
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("appRoot").style.display = "block";
+  
+  renderTopbarForRole();
+
+  if (user.mustChangePassword) {
+    openPasswordChangeModal(true);
+  } else {
+    showToast(`Welcome back, ${user.firstName}`);
+    openDashboard();
+  }
+
+  renderSidebar();
+  startCadenceScheduler();
+}
+
+function openPasswordChangeModal(isMandatory) {
+  document.getElementById("modalMainTitle").textContent = "Update Password";
+  
+  let modalText = "Update your current login password.";
+  if (isMandatory) modalText = "First Login Detected. Security policy requires you to update your temporary password before proceeding.";
+
+  document.getElementById("modalReminderText").innerHTML = `
+    <b>Password Reset Required:</b> ` + modalText + `<br><br>
+    <div style="display:flex; flex-direction:column; gap:8px; text-align:left; margin-top:10px;">
+      <label style="font-size:11px; font-weight:800;">NEW PASSWORD</label>
+      <input type="password" id="modalNewPassword" style="padding:8px; border:1px solid var(--slate-100); border-radius:4px;" placeholder="Enter new password">
+    </div>
+  `;
+
+  let btnHtml = "";
+  if (!isMandatory) {
+    btnHtml += `<button class="btn btn-secondary" onclick="closeModalReminder()">Cancel</button>`;
+  }
+  btnHtml += `<button class="btn btn-primary" onclick="submitPasswordChange('` + authState.username + `', ` + isMandatory + `)">Save New Password</button>`;
+  
+  document.getElementById("modalBtnContainer").innerHTML = btnHtml;
+  document.getElementById("modalOverlay").style.display = "flex";
+}
+
+function submitPasswordChange(username, isMandatory) {
+  const newPass = document.getElementById("modalNewPassword").value;
+  if (!newPass) { showToast("Password cannot be blank."); return; }
+  if (newPass.length < 6) { showToast("Password must be at least 6 characters long."); return; }
+
+  const user = USER_DIRECTORY[username];
+  if (user) {
+    user.password = newPass;
+    user.mustChangePassword = false;
+    showToast("Password updated successfully.");
+    closeModalReminder();
+    if (isMandatory) openDashboard();
+  }
+}
+
+function renderTopbarForRole() {
+  const menu = document.getElementById("userMenu");
+  const isAdmin = authState.roleId === "role-admin";
+  menu.innerHTML = `
+    <button class="user-menu-trigger" onclick="toggleUserMenu()">
+      <div class="user-avatar">` + authState.name.slice(0, 2).toUpperCase() + `</div>
+      ` + authState.name + `
+      <span style="font-size:9px;">▾</span>
+    </button>
+    <div class="user-menu-dropdown" id="userMenuDropdown">
+      <div style="padding:8px 12px; border-bottom:1px solid var(--slate-100);">
+        <div style="font-weight:700; font-size:13px;">` + authState.name + `</div>
+        <div style="font-size:11px; color:var(--slate-500);">` + authState.username + ` (` + ROLES[authState.roleId].name + `)</div>
+      </div>
+      <button class="user-menu-item" onclick="openPasswordChangeModal(false)">🔑 Change Password</button>
+      ` + (isAdmin ? `<button class="user-menu-item" onclick="openAdminPanel()">🛡 Admin Panel</button>` : "") + `
+      <button class="user-menu-item" onclick="logout()">↩ Sign Out</button>
+    </div>
+  `;
+}
+
+function toggleUserMenu() {
+  document.getElementById("userMenuDropdown").classList.toggle("open");
+}
+
+function logout() {
+  authState = { loggedIn: false, username: null, email: null, roleId: null };
+  renderAuthScreen();
+}
+
+function generateDraft(inc) {
+  const emailBody =
+`Subject: [` + (inc.severity === 'sev1' ? 'URGENT OUTAGE' : 'Notice') + `] Service Impact Status Update — ` + inc.affectedService + `
+
+Dear ` + inc.account + ` team,
+
+This is a periodic status update regarding the high-severity incident affecting ` + inc.affectedService + `.
+
+Incident Reference: ` + inc.sourceRef + `
+Current Status: ` + inc.status + `
+Severity Level: ` + inc.severity.toUpperCase() + `
+
+Our engineering bridge remains actively engaged. Next cadence update will follow per SLA timeline.
+
+Regards,
+` + inc.owner + `
+Avaya Service Delivery Manager`;
+
+  const waBody = 
+`🔴 *AVAYA SERVICE NOTIFICATION UPDATE*
+
+Dear *` + inc.account + `* team,
+
+Periodic update regarding your active incident.
+
+• *Service:* ` + inc.affectedService + `
+• *Incident ID:* ` + inc.sourceRef + `
+• *Status:* ` + inc.status + `
+• *Update Cycle:* ` + inc.slaMinutes + ` Minutes Cadence
+
+Our technical bridge continues active resolution work. SDM: *` + inc.owner + `*.`;
+
+  return { email: emailBody, whatsapp: waBody };
+}
+
+function renderSidebar() {
+  const list = document.getElementById("incidentList");
+  document.getElementById("incidentCount").textContent = INCIDENTS.length + " open";
+  
+  if (INCIDENTS.length === 0) {
+    list.innerHTML = `<div style="padding:20px; font-size:12.5px; color:var(--slate-500); font-style:italic;">No active incidents. Use "Fetch Incident" to query FL/LHN records from report.avaya.com.</div>`;
+    return;
+  }
+
+  let htmlStr = "";
+  INCIDENTS.forEach(inc => {
+    const remaining = inc.slaMinutes - inc.elapsedMinutes;
+    let cardClass = "incident-card";
+    if (inc.id === currentId) cardClass += " active";
+    
+    htmlStr += `
+    <div class="` + cardClass + `" onclick="selectIncident('` + inc.id + `')">
+      <div class="incident-top">
+        <span class="sev-badge ` + inc.severity + `">` + inc.severity.toUpperCase() + `</span>
+        <span class="incident-id">` + inc.sourceRef + `</span>
+      </div>
+      <div class="incident-title">` + inc.title + `</div>
+      <div class="incident-meta">
+        <span class="src-tag">` + inc.source + `</span>
+        <span>` + inc.account + `</span>
+        <span>· ` + (remaining > 0 ? remaining + 'm due' : 'DUE NOW') + `</span>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = htmlStr;
+}
+
+function selectIncident(id) {
+  currentId = id;
+  currentView = "incident";
+  renderSidebar();
+  renderMain();
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.classList.remove("show"); }, 2400);
+}
+
+function renderMain() {
+  if (!authState.loggedIn) {
+    renderAuthScreen();
+    return;
+  }
+
+  const main = document.getElementById("mainPanel");
+  if (currentView === "dashboard") { main.innerHTML = renderDashboardHTML(); return; }
+  if (currentView === "settings") { main.innerHTML = renderSettingsHTML(); return; }
+  if (currentView === "search") { main.innerHTML = renderSearchHTML(); return; }
+  if (currentView === "change-search") { main.innerHTML = renderChangeSearchHTML(); return; }
+  if (currentView === "admin") { main.innerHTML = renderAdminPanelHTML(); return; }
+  main.innerHTML = renderIncidentHTML();
+}
+
+function openDashboard() {
+  currentView = "dashboard";
+  renderMain();
+}
+
+function renderDashboardHTML() {
+  const openP1 = INCIDENTS.filter(i => i.severity === 'sev1').length;
+  const openP2 = INCIDENTS.filter(i => i.severity === 'sev2').length;
+
+  const msCompanies = COMPANY_DIRECTORY.filter(c => c.type === 'MS');
+  const gssCompanies = COMPANY_DIRECTORY.filter(c => c.type === 'GSS');
+  const infinityCompanies = COMPANY_DIRECTORY.filter(c => c.type === 'Infinity');
+
+  let msHtml = "";
+  msCompanies.forEach(c => {
+    let websiteHtml = "";
+    if (c.website) websiteHtml = `<div style="font-size:10px; color:var(--avaya-red);">` + c.website + `</div>`;
+    let snId = c.snowCompanyId ? c.snowCompanyId : 'Auto-Fetched';
+    msHtml += `
+      <div class="company-card-item">
+        <div class="company-name">` + c.name + `</div>
+        <div class="company-id-label">SNOW ID: ` + snId + `</div>
+        ` + websiteHtml + `
+      </div>
+    `;
+  });
+
+  let gssHtml = "";
+  gssCompanies.forEach(c => {
+    let websiteHtml = "";
+    if (c.website) websiteHtml = `<div style="font-size:10px; color:var(--avaya-red);">` + c.website + `</div>`;
+    let flsStr = c.lhn ? c.lhn : (c.fls ? c.fls.join(', ') : '');
+    gssHtml += `
+      <div class="company-card-item">
+        <div class="company-name">` + c.name + `</div>
+        <div class="company-id-label">LHN/FL: ` + flsStr + `</div>
+        ` + websiteHtml + `
+      </div>
+    `;
+  });
+
+  let infHtml = "";
+  if (infinityCompanies.length === 0) {
+    infHtml = `<div style="font-size:12px; color:var(--slate-500); font-style:italic;">No Infinity accounts registered yet.</div>`;
+  } else {
+    infinityCompanies.forEach(c => {
+      infHtml += `
+        <div class="company-card-item">
+          <div class="company-name">` + c.name + `</div>
+        </div>
+      `;
+    });
+  }
+
+  return `
+    <div class="dashboard-wrap">
+      <div class="search-title">Operations Command Dashboard</div>
+      <div class="search-sub">Global high-severity incident summary & segmented enterprise company directory.</div>
+
+      <div class="kpi-grid" style="margin-top:18px;">
+        <div class="kpi-card p1">
+          <div class="kpi-val">` + openP1 + `</div>
+          <div>
+            <div class="kpi-title">Open P1 / Sev-1 Outages</div>
+            <div class="kpi-desc">30-Minute mandatory update timer cycle</div>
+          </div>
+        </div>
+        <div class="kpi-card p2">
+          <div class="kpi-val">` + openP2 + `</div>
+          <div>
+            <div class="kpi-title">Open P2 / Sev-2 Incidents</div>
+            <div class="kpi-desc">60-Minute periodic update timer cycle</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-label">Registered Enterprise Companies By Segment</div></div>
+        <div class="segment-grid">
+          <div class="segment-col ms">
+            <div class="segment-header">
+              <span>Avaya Managed Services</span>
+              <span class="segment-count">` + msCompanies.length + `</span>
+            </div>
+            ` + msHtml + `
+          </div>
+          <div class="segment-col gss">
+            <div class="segment-header">
+              <span>Global Support (GSS)</span>
+              <span class="segment-count">` + gssCompanies.length + `</span>
+            </div>
+            ` + gssHtml + `
+          </div>
+          <div class="segment-col infinity">
+            <div class="segment-header">
+              <span>Avaya Infinity</span>
+              <span class="segment-count">` + infinityCompanies.length + `</span>
+            </div>
+            ` + infHtml + `
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderIncidentHTML() {
+  const inc = INCIDENTS.find(i => i.id === currentId);
+  if (!inc) return `<div class="card"><div class="card-header"><div class="card-label">No Incident Selected</div></div><div style="font-size:13px; color:var(--slate-500);">Select or fetch an incident to begin.</div></div>`;
+  
+  const st = STATE[inc.id];
+  const remaining = inc.slaMinutes - inc.elapsedMinutes;
+  const contacts = getContacts(inc.account);
+
+  let flHtml = "";
+  if (inc.flId) {
+    flHtml = `<span>🏢 FL/LHN: <b>` + inc.flId + `</b></span>`;
+  }
+
+  let genBtnHtml = `<button class="btn btn-secondary" onclick="runGenerate()">↻ Regenerate Draft</button>`;
+  if (!st.draft) {
+    genBtnHtml = `<button class="btn btn-primary" onclick="runGenerate()">⚡ Generate Notification Draft</button>`;
+  }
+
+  let draftHtml = "";
+  if (!st.draft) {
+    draftHtml = `<div class="draft-box empty">Click "Generate Notification Draft" to prepare outbound customer messaging.</div>`;
+  } else {
+    let emailTabClass = "draft-tab";
+    let waTabClass = "draft-tab";
+    if (st.activeChannel === 'email') emailTabClass += " active-email";
+    if (st.activeChannel === 'whatsapp') waTabClass += " active-wa";
+
+    let editorHtml = "";
+    if (st.activeChannel === 'whatsapp') {
+      editorHtml = `
+        <div class="wa-preview-container">
+          <div class="wa-badge">APPROVED META TEMPLATE: sev1_customer_update_v1</div>
+          <div class="wa-message-bubble">
+            <div class="wa-header">🔴 AVAYA SERVICE CRITICAL NOTIFICATION</div>
+            <div class="wa-body" id="draftEditorWA" contenteditable="true" oninput="onEdit(this)">` + (st.edited['whatsapp'] ? st.edited['whatsapp'] : st.draft['whatsapp']) + `</div>
+            <div class="wa-footer">Meta Cloud API · WhatsApp Business ✓✓</div>
+          </div>
+        </div>
+      `;
+    } else {
+      editorHtml = `<div class="draft-box" contenteditable="true" id="draftEditorEmail" oninput="onEdit(this)">` + (st.edited['email'] ? st.edited['email'] : st.draft['email']) + `</div>`;
+    }
+
+    draftHtml = `
+      <div class="draft-tabs">
+        <div class="` + emailTabClass + `" onclick="switchChannel('email')">✉ Email (Gmail API)</div>
+        <div class="` + waTabClass + `" onclick="switchChannel('whatsapp')">💬 WhatsApp Business API</div>
+      </div>
+      ` + editorHtml + `
+      <div class="guardrail-note">
+        <span>✓</span> Guardrail Passed — claims verified against source fields.
+      </div>
+      ` + renderRecipientPickerHTML(inc, st, contacts) + `
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="sendNotification()" ` + (st.selectedRecipients.size === 0 ? 'disabled' : '') + `>Approve & Send via ` + st.activeChannel.toUpperCase() + ` (` + st.selectedRecipients.size + `)</button>
+        <span class="sent-confirm ` + (st.justSent ? 'show' : '') + `">✓ Notification Sent & ` + inc.slaMinutes + `m Timer Started</span>
+      </div>
+    `;
+  }
+
+  let logHtml = "";
+  if (st.sentLog.length > 0) {
+    let timelineHtml = "";
+    st.sentLog.forEach(entry => {
+      timelineHtml += `
+        <div class="tl-item">
+          <div class="tl-time">` + entry.time + `</div>
+          <div class="tl-dot-col"><div class="tl-dot"></div></div>
+          <div class="tl-text"><b>` + entry.channel.toUpperCase() + `</b> notification dispatched to ` + entry.recipientNames.join(", ") + ` by ` + inc.owner + `</div>
+        </div>
+      `;
+    });
+    logHtml = `
+      <div class="card">
+        <div class="card-header"><div class="card-label">Notification Audit Log</div></div>
+        <div class="timeline">` + timelineHtml + `</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="breadcrumb">Active Queue / ` + inc.sourceRef + `</div>
+    <div class="main-header">
+      <div>
+        <h1 class="main-title">` + inc.title + `</h1>
+        <div class="main-sub">
+          <span><span class="sev-badge ` + inc.severity + `">` + inc.severity.toUpperCase() + `</span></span>
+          <span>📍 ` + inc.account + `</span>
+          <span>🕐 Detected ` + inc.startTime + `</span>
+          <span class="src-tag">` + inc.source + `</span>
+          ` + flHtml + `
+        </div>
+      </div>
+      <div class="timer-box">
+        <div class="timer-label">` + (inc.severity === 'sev1' ? '30m Outage Cadence' : '60m Incident Cadence') + `</div>
+        <div class="timer-value ` + (remaining <= 5 ? 'urgent' : '') + `">` + (remaining > 0 ? remaining + 'm' : 'DUE') + `</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-label">ITSM Payload Schema</div></div>
+      <div class="field-grid">
+        <div class="field"><div class="field-k">Reference ID</div><div class="field-v">` + inc.sourceRef + `</div></div>
+        <div class="field"><div class="field-k">Status</div><div class="field-v">` + inc.status + `</div></div>
+        <div class="field"><div class="field-k">Affected CI / Service</div><div class="field-v">` + inc.affectedService + `</div></div>
+        <div class="field"><div class="field-k">Assigned SDM</div><div class="field-v">` + inc.owner + `</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-label">Customer Notification Review</div>
+        ` + genBtnHtml + `
+      </div>
+      ` + draftHtml + `
+    </div>
+    ` + logHtml + `
+  `;
+}
+
+function renderRecipientPickerHTML(inc, st, contacts) {
+  const relevant = [];
+  contacts.forEach(c => {
+    if (st.activeChannel === 'email' && c.email) relevant.push(c);
+    if (st.activeChannel === 'whatsapp' && c.phone) relevant.push(c);
+  });
+
+  let rowHtml = "";
+  if (relevant.length === 0) {
+    rowHtml = `<div style="font-size:12.5px; color:var(--slate-500);">No contacts available for this channel. Click "Manage / Add Recipients" to add contacts.</div>`;
+  } else {
+    relevant.forEach(c => {
+      let detail = st.activeChannel === 'email' ? c.email : c.phone;
+      let checkedStr = st.selectedRecipients.has(c.id) ? 'checked' : '';
+      rowHtml += `
+        <label class="recipient-row">
+          <input type="checkbox" ` + checkedStr + ` onchange="toggleRecipient(` + c.id + `)">
+          <span class="recipient-name">` + c.name + `</span>
+          <span class="recipient-detail">` + detail + `</span>
+          <span class="tag ` + c.type + `">` + c.type + `</span>
+        </label>
+      `;
+    });
+  }
+
+  return `
+    <div class="recipients-box">
+      <div class="recipients-box-header">
+        <div class="recipients-box-title">Selected Recipients (` + inc.account + `)</div>
+        <button class="manage-link" onclick="openSettings()">+ Manage / Add Recipients →</button>
+      </div>
+      ` + rowHtml + `
+    </div>
+  `;
+}
+
+function toggleRecipient(contactId) {
+  const st = STATE[currentId];
+  if (st.selectedRecipients.has(contactId)) st.selectedRecipients.delete(contactId);
+  else st.selectedRecipients.add(contactId);
+  renderMain();
+}
+
+function runGenerate() {
+  const inc = INCIDENTS.find(i => i.id === currentId);
+  const st = STATE[inc.id];
+  st.draft = generateDraft(inc);
+  st.edited = {};
+  st.activeChannel = "email";
+  st.justSent = false;
+  st.selectedRecipients = new Set();
+  renderMain();
+}
+
+function switchChannel(ch) {
+  const st = STATE[currentId];
+  st.activeChannel = ch;
+  st.selectedRecipients = new Set();
+  renderMain();
+}
+
+function onEdit(el) {
+  const st = STATE[currentId];
+  st.edited[st.activeChannel] = el.innerText;
+}
+
+function sendNotification() {
+  const inc = INCIDENTS.find(i => i.id === currentId);
+  const st = STATE[inc.id];
+  if (st.selectedRecipients.size === 0) return;
+
+  const contacts = getContacts(inc.account);
+  const names = [];
+  contacts.forEach(c => {
+    if (st.selectedRecipients.has(c.id)) names.push(c.name);
+  });
+  
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  st.sentLog.push({ time: timeStr, channel: st.activeChannel, recipientNames: names });
+  st.justSent = true;
+
+  inc.slaMinutes = (inc.severity === 'sev1') ? 30 : 60;
+  inc.elapsedMinutes = 0;
+
+  renderSidebar();
+  renderMain();
+  showToast(inc.severity.toUpperCase() + " Notification sent. " + inc.slaMinutes + "-min Cadence Timer restarted.");
+}
+
+function startCadenceScheduler() {
+  setInterval(() => {
+    INCIDENTS.forEach(inc => {
+      inc.elapsedMinutes += 1;
+      if (inc.elapsedMinutes >= inc.slaMinutes) {
+        triggerCadenceReminderPopUp(inc);
+      }
+    });
+    renderSidebar();
+    if (currentView === "incident") renderMain();
+  }, 60000);
+}
+
+function triggerCadenceReminderPopUp(inc) {
+  activeReminderIncidentId = inc.id;
+  document.getElementById("modalReminderText").innerHTML = 
+    `<b>SLA Cadence Reminder:</b> The ` + inc.slaMinutes + `-minute timer for <b>` + inc.sourceRef + `</b> (` + inc.account + `) has elapsed.<br><br>Please review technical updates and send the periodic status notification to customer stakeholders.`;
+  
+  document.getElementById("modalMainTitle").textContent = "⏰ Cadence Update Reminder";
+  
+  let btnHtml = `
+    <button class="btn btn-secondary" onclick="closeModalReminder()">Snooze (5m)</button>
+    <button class="btn btn-primary" onclick="acknowledgeReminderAndReview()">Review & Send Notification</button>
+  `;
+  document.getElementById("modalBtnContainer").innerHTML = btnHtml;
+  
+  document.getElementById("modalOverlay").style.display = "flex";
+}
+
+function closeModalReminder() {
+  document.getElementById("modalOverlay").style.display = "none";
+}
+
+function acknowledgeReminderAndReview() {
+  closeModalReminder();
+  if (activeReminderIncidentId) {
+    selectIncident(activeReminderIncidentId);
+  }
+}
+
+function openSettings() { currentView = "settings"; renderMain(); }
+
+function renderSettingsHTML() {
+  const user = USER_DIRECTORY[authState.username];
+  let mappedAccounts = [];
+  if (authState.roleId === "role-admin") {
+    mappedAccounts = Object.keys(CONTACTS);
+  } else {
+    mappedAccounts = user && user.mappedCompanies ? user.mappedCompanies : ["Avaada Group"];
+  }
+
+  let finalHtml = `
+    <div class="settings-wrap">
+      <div class="settings-title">Recipient Directory Management</div>
+      <div class="settings-sub">SDMs can add and manage authorized customer contacts for mapped accounts.</div>
+  `;
+
+  mappedAccounts.forEach(acc => {
+    const contacts = getContacts(acc);
+    let rowsHtml = "";
+
+    if (contacts.length === 0) {
+      rowsHtml = `<tr><td colspan="5" style="padding:10px; font-size:12.5px; color:var(--slate-500);">No contacts added for this account.</td></tr>`;
+    } else {
+      contacts.forEach(c => {
+        let emailVal = c.email ? c.email : '—';
+        let phoneVal = c.phone ? c.phone : '—';
+        rowsHtml += `
+          <tr style="border-bottom:1px solid var(--slate-100); font-size:13px;">
+            <td style="padding:8px 6px;"><b>` + c.name + `</b></td>
+            <td style="padding:8px 6px;"><span class="tag ` + c.type + `">` + c.type + `</span></td>
+            <td style="padding:8px 6px; font-family:var(--mono);">` + emailVal + `</td>
+            <td style="padding:8px 6px; font-family:var(--mono);">` + phoneVal + `</td>
+            <td style="padding:8px 6px;"><button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="removeContact('` + acc + `', ` + c.id + `)">Remove</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    finalHtml += `
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-label">Account: <b>` + acc + `</b> (` + contacts.length + ` Contacts)</div>
+        </div>
+        
+        <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+          <thead>
+            <tr style="text-align:left; font-size:11px; color:var(--slate-500); border-bottom:1px solid var(--slate-100);">
+              <th style="padding:6px;">NAME</th><th style="padding:6px;">TYPE</th><th style="padding:6px;">EMAIL</th><th style="padding:6px;">PHONE</th><th style="padding:6px;">ACTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            ` + rowsHtml + `
+          </tbody>
+        </table>
+
+        <div style="font-size:12px; font-weight:700; color:var(--slate-500); margin-bottom:6px;">+ Add New Recipient for ` + acc + `</div>
+        <div class="add-contact-form">
+          <input type="text" id="add-name-` + cssId(acc) + `" placeholder="Contact Full Name">
+          <input type="email" id="add-email-` + cssId(acc) + `" placeholder="Email Address">
+          <input type="text" id="add-phone-` + cssId(acc) + `" placeholder="Mobile Phone (+91/E.164)">
+          <button class="btn btn-primary" onclick="addContact('` + acc + `')">+ Save Contact</button>
+        </div>
+      </div>
+    `;
+  });
+
+  finalHtml += `</div>`;
+  return finalHtml;
+}
+
+function cssId(str) { return str.replace(/[^a-zA-Z0-9]/g, "_"); }
+
+function addContact(acc) {
+  const name = document.getElementById("add-name-" + cssId(acc)).value.trim();
+  const email = document.getElementById("add-email-" + cssId(acc)).value.trim();
+  const phone = document.getElementById("add-phone-" + cssId(acc)).value.trim();
+
+  if (!name) { showToast("Provide at least a name and email/phone."); return; }
+  if (!email && !phone) { showToast("Provide at least a name and email/phone."); return; }
+
+  getContacts(acc).push({ id: contactIdSeq++, name: name, type: "external", email: email, phone: phone, role: "Customer Contact" });
+  showToast("Contact " + name + " added to " + acc);
+  renderMain();
+}
+
+function removeContact(acc, contactId) {
+  let newList = [];
+  CONTACTS[acc].forEach(c => {
+    if (c.id !== contactId) newList.push(c);
+  });
+  CONTACTS[acc] = newList;
+  showToast("Contact removed");
+  renderMain();
+}
+
+function setFetchSource(source) {
+  fetchSourceMode = source;
+  fetchSearchResults = null;
+  renderMain();
+}
+
+function openSearch() { 
+  currentView = "search"; 
+  fetchSearchResults = null;
+  renderMain(); 
+}
+
+function executeFetchSearch() {
+  const query = document.getElementById("fetchQueryInput").value.trim();
+  if (!query) { showToast("Enter a search term."); return; }
+
+  const queryLower = query.toLowerCase();
+  const queryNormFL = normalizeFL(query);
+
+  let results = [];
+
+  if (fetchSourceMode === "MS") {
+    results = SERVICENOW_CATALOG.filter(item => 
+      item.sourceRef.toLowerCase().includes(queryLower) || 
+      item.account.toLowerCase().includes(queryLower)
+    );
+  } else {
+    results = SIEBEL_CATALOG.filter(item => 
+      item.sourceRef.toLowerCase().includes(queryLower) || 
+      (item.flId && normalizeFL(item.flId) === queryNormFL)
+    );
+    
+    if (results.length === 0 && !queryLower.startsWith("sr-")) {
+      const dynamicHits = fetchIncidentsFromReportAvaya(query);
+      if (dynamicHits.length > 0) {
+        results = dynamicHits;
+        showToast("Retrieved active incidents from report.avaya.com");
+      }
+    }
+  }
+
+  fetchSearchResults = results;
+  renderMain();
+}
+
+function populateIncidentToActiveQueue(sourceRef) {
+  let item = null;
+  fetchSearchResults.forEach(i => {
+    if (i.sourceRef === sourceRef) item = i;
+  });
+  if (!item) return;
+
+  let exists = false;
+  INCIDENTS.forEach(i => {
+    if (i.sourceRef === sourceRef) exists = true;
+  });
+  if (exists) {
+    showToast("Incident is already populated in Active Queue."); return;
+  }
+
+  const newInc = {
+    id: "inc-" + Date.now(),
+    source: (fetchSourceMode === "MS" ? "servicenow" : "report.avaya.com"),
+    sourceRef: item.sourceRef,
+    severity: item.severity,
+    title: item.title,
+    affectedService: item.affectedService,
+    account: item.account,
+    owner: authState.name,
+    status: item.status,
+    startTime: item.startTime,
+    slaMinutes: item.slaMinutes,
+    elapsedMinutes: 0,
+    flId: item.flId || null
+  };
+
+  INCIDENTS.unshift(newInc);
+  STATE[newInc.id] = { draft: null, sentLog: [], activeChannel: "email", edited: {}, selectedRecipients: new Set() };
+  currentId = newInc.id;
+  currentView = "incident";
+  
+  showToast("Populated " + item.sourceRef + " into Active Queue");
+  renderSidebar();
+  renderMain();
+}
+
+function renderSearchHTML() {
+  let resultsHtml = "";
+  if (fetchSearchResults !== null) {
+    let rows = "";
+    if (fetchSearchResults.length === 0) {
+      rows = `<div style="font-size:13px; color:var(--slate-500);">No active incidents found.</div>`;
+    } else {
+      fetchSearchResults.forEach(res => {
+        rows += `
+          <div class="result-row">
+            <div class="result-main">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span class="sev-badge ` + res.severity + `">` + res.severity.toUpperCase() + `</span>
+                <span class="result-title">` + res.sourceRef + ` — ` + res.title + `</span>
+              </div>
+              <div class="result-meta">Account: <b>` + res.account + `</b> · Service: ` + res.affectedService + ` · Status: ` + res.status + (res.flId ? ` · FL/LHN: <b>` + res.flId + `</b>` : '') + `</div>
+            </div>
+            <button class="btn btn-primary" onclick="populateIncidentToActiveQueue('` + res.sourceRef + `')">Populate to Active Queue & Send Notification</button>
+          </div>
+        `;
+      });
+    }
+    
+    resultsHtml = `
+      <div class="card">
+        <div class="card-header"><div class="card-label">Search Query Results (` + fetchSearchResults.length + ` Found)</div></div>
+        ` + rows + `
+      </div>
+    `;
+  }
+
+  let msBtnClass = fetchSourceMode === 'MS' ? 'active' : '';
+  let gssBtnClass = fetchSourceMode === 'GSS' ? 'active' : '';
+
+  let placeholderTxt = fetchSourceMode === 'MS' 
+    ? "Enter Incident # (e.g. INC0012345) or Company Name..." 
+    : "Enter 10-Digit FL/LHN (e.g. 0051972964) or SR #...";
+
+  let hintTxt = fetchSourceMode === 'MS'
+    ? "💡 <b>Managed Services:</b> Search using INC# or full/partial Company Name."
+    : "💡 <b>GSS Customers:</b> Search using 10-digit FL/LHN or SR Number. FL searches query <code>report.avaya.com</code>.";
+
+  return `
+    <div class="search-wrap">
+      <div class="search-title">Direct Incident & SR Fetch</div>
+      <div class="search-sub">Query open high-severity incidents for Managed Services or GSS accounts.</div>
+      
+      <div class="mode-toggle" style="margin-top:16px;">
+        <button class="mode-btn ` + msBtnClass + `" onclick="setFetchSource('MS')">Managed Services (INC # / Company Name)</button>
+        <button class="mode-btn ` + gssBtnClass + `" onclick="setFetchSource('GSS')">GSS (FL/LHN / SR #)</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-label">Source Segment: <b>` + fetchSourceMode + `</b></div>
+        </div>
+        
+        <div class="search-form">
+          <input type="text" id="fetchQueryInput" placeholder="` + placeholderTxt + `">
+          <button class="btn btn-primary" onclick="executeFetchSearch()">Fetch Records</button>
+        </div>
+
+        <div style="font-size:11.5px; color:var(--slate-500);">
+          ` + hintTxt + `
+        </div>
+      </div>
+
+      ` + resultsHtml + `
+    </div>
+  `;
+}
+
+function openChangeSearch() {
+  currentView = "change-search";
+  activeChangeDraft = null;
+  renderMain();
+}
+
+function renderChangeSearchHTML() {
+  let rows = "";
+  SERVICENOW_CHANGE_CATALOG.forEach(chg => {
+    rows += `
+      <div class="result-row">
+        <div class="result-main">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span class="sev-badge sev2">` + chg.riskLevel.toUpperCase() + ` RISK</span>
+            <span class="result-title">` + chg.changeNumber + ` — ` + chg.title + `</span>
+          </div>
+          <div class="result-meta">Account: <b>` + chg.account + `</b> · Window: ` + chg.plannedStart + ` to ` + chg.plannedEnd + ` · Status: ` + chg.status + `</div>
+        </div>
+        <button class="btn btn-primary" onclick="selectChangeForDraft('` + chg.changeNumber + `')">Select & Draft</button>
+      </div>
+    `;
+  });
+
+  let draftHtml = "";
+  if (activeChangeDraft !== null) {
+    draftHtml = `
+      <div class="card">
+        <div class="card-header"><div class="card-label">Generated Maintenance Draft (` + activeChangeDraft.changeNumber + `)</div></div>
+        <div class="draft-box" contenteditable="true">` + activeChangeDraft.draftText + `</div>
+        <div class="action-row" style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="showToast('Change Notification Dispatched via Email/WhatsApp'); openChangeSearch();">Approve & Dispatch Change Notice</button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="search-wrap">
+      <div class="search-title">ServiceNow Change Notification Module</div>
+      <div class="search-sub">Generate and dispatch planned maintenance updates for ServiceNow Change Requests.</div>
+      
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header"><div class="card-label">Active ServiceNow Change Requests</div></div>
+        ` + rows + `
+      </div>
+
+      ` + draftHtml + `
+    </div>
+  `;
+}
+
+function selectChangeForDraft(changeNumber) {
+  let chg = null;
+  SERVICENOW_CHANGE_CATALOG.forEach(c => {
+    if (c.changeNumber === changeNumber) chg = c;
+  });
+  if (!chg) return;
+
+  activeChangeDraft = {
+    changeNumber: chg.changeNumber,
+    draftText: 
+`📢 PLANNED MAINTENANCE NOTICE — ` + chg.account + `
+
+Service: ` + chg.affectedService + `
+Change ID: ` + chg.changeNumber + `
+Window: ` + chg.plannedStart + ` to ` + chg.plannedEnd + `
+Risk Profile: ` + chg.riskLevel.toUpperCase() + `
+
+Dear Customer,
+
+Please be advised that scheduled maintenance will occur during the window specified above. Our engineers will monitor service stability throughout.
+
+Regards,
+` + chg.owner + `
+Avaya Service Delivery`
+  };
+
+  renderMain();
+}
+
+function openAdminPanel() {
+  currentView = "admin";
+  renderMain();
+}
+
+function setAdminSubTab(tab) {
+  adminSubTab = tab;
+  renderMain();
+}
+
+function renderAdminPanelHTML() {
+  let onboardingClass = "mode-btn";
+  let userClass = "mode-btn";
+  if (adminSubTab === 'onboarding') onboardingClass += " active";
+  if (adminSubTab === 'user-creation') userClass += " active";
+
+  let contentHtml = "";
+  if (adminSubTab === 'onboarding') contentHtml = renderAdminOnboardingHTML();
+  if (adminSubTab === 'user-creation') contentHtml = renderAdminUserCreationHTML();
+
+  return `
+    <div class="admin-wrap">
+      <div class="search-title">Administrator Control Panel</div>
+      <div class="search-sub">Company Onboarding and User Registration & Allocation.</div>
+
+      <div class="mode-toggle" style="margin-top:16px;">
+        <button class="` + onboardingClass + `" onclick="setAdminSubTab('onboarding')">🏢 Company Onboarding</button>
+        <button class="` + userClass + `" onclick="setAdminSubTab('user-creation')">👤 User Registration & Allocation</button>
+      </div>
+
+      ` + contentHtml + `
+    </div>
+  `;
+}
+
+function renderAdminOnboardingHTML() {
+  return `
+    <div class="card">
+      <div class="card-header"><div class="card-label">Import Company — Managed Services (ServiceNow)</div></div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">SERVICENOW COMPANY ID *</label>
+          <input type="text" id="msSnowIdInput" placeholder="Enter ServiceNow Company ID / Hex..." style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">COMPANY PUBLIC WEBSITE URL (OPTIONAL)</label>
+          <input type="text" id="msWebsiteInput" placeholder="https://company.com (For Logo, Name & Theme)" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="adminImportMSCompany()">Import Managed Services Company</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-label">Import Company — GSS Customers (FL / LHN 10-Digit)</div></div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">10-DIGIT FL(s) OR LHN NUMBER *</label>
+          <input type="text" id="gssFlInput" placeholder="e.g. 0051972964, 0051972965 (Comma Separated)" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">COMPANY PUBLIC WEBSITE URL (OPTIONAL)</label>
+          <input type="text" id="gssWebsiteInput" placeholder="https://company.com (For Logo, Name & Theme)" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="adminImportGSSCompany()">Import GSS Customer Company</button>
+    </div>
+  `;
+}
+
+function adminImportMSCompany() {
+  const snowId = document.getElementById("msSnowIdInput").value.trim();
+  const url = document.getElementById("msWebsiteInput").value.trim();
+
+  if (!snowId) { showToast("Enter ServiceNow Company ID."); return; }
+
+  let compName = "MS Customer (" + snowId.slice(0, 6) + ")";
+  if (url) {
+    let domain = url.replace(/https?:\/\/(www\.)?/, '').split('.')[0];
+    compName = domain.toUpperCase() + " Group";
+  }
+
+  COMPANY_DIRECTORY.push({
+    id: companyIdSeq++,
+    name: compName,
+    type: "MS",
+    snowCompanyId: snowId,
+    website: url ? url : ""
+  });
+
+  if (!CONTACTS[compName]) CONTACTS[compName] = [];
+
+  showToast("Onboarded Managed Services Company: " + compName);
+  renderMain();
+}
+
+function adminImportGSSCompany() {
+  const flRaw = document.getElementById("gssFlInput").value.trim();
+  const url = document.getElementById("gssWebsiteInput").value.trim();
+
+  if (!flRaw) { showToast("Enter 10-Digit FL or LHN."); return; }
+
+  const flArray = flRaw.split(',').map(s => s.trim());
+  let compName = "GSS Site (" + flArray[0] + ")";
+  if (url) {
+    let domain = url.replace(/https?:\/\/(www\.)?/, '').split('.')[0];
+    compName = domain.toUpperCase() + " Services";
+  }
+
+  COMPANY_DIRECTORY.push({
+    id: companyIdSeq++,
+    name: compName,
+    type: "GSS",
+    lhn: flArray[0],
+    fls: flArray,
+    website: url ? url : ""
+  });
+
+  if (!CONTACTS[compName]) CONTACTS[compName] = [];
+
+  showToast("Onboarded GSS Company: " + compName + " (" + flArray.length + " FLs)");
+  renderMain();
+}
+
+function renderAdminUserCreationHTML() {
+  let selectOpts = "";
+  COMPANY_DIRECTORY.forEach(c => {
+    selectOpts += `<option value="` + c.name + `">` + c.name + ` (` + c.type + `)</option>`;
+  });
+
+  let userRows = "";
+  const users = Object.values(USER_DIRECTORY);
+  users.forEach(usr => {
+    let chips = "";
+    if (usr.mappedCompanies && usr.mappedCompanies.length) {
+      usr.mappedCompanies.forEach(cName => {
+        chips += `<span class="company-chip">` + cName + ` <span class="remove-btn" onclick="adminUnmapCompany('` + usr.username + `', '` + cName + `')">✕</span></span>`;
+      });
+    } else {
+      chips = "<i>None Mapped</i>";
+    }
+
+    userRows += `
+      <tr style="border-bottom:1px solid var(--slate-100); font-size:12.5px;">
+        <td style="padding:8px 6px;">
+          <b>` + usr.firstName + ` ` + usr.lastName + `</b> <br>
+          <span style="font-family:var(--mono); color:var(--slate-500); font-size:11px;">` + usr.email + ` • ` + (usr.phone ? usr.phone : 'No Phone') + `</span>
+        </td>
+        <td style="padding:8px 6px;">` + ROLES[usr.roleId].name + `</td>
+        <td style="padding:8px 6px;">
+          ` + chips + `
+        </td>
+      </tr>
+    `;
+  });
+
+  return `
+    <div class="card">
+      <div class="card-header"><div class="card-label">User Provisioning & Customer Allocations</div></div>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">FIRST NAME *</label>
+          <input type="text" id="usrFirstName" placeholder="First Name" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">LAST NAME *</label>
+          <input type="text" id="usrLastName" placeholder="Last Name" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">EMAIL ID *</label>
+          <input type="email" id="usrEmail" placeholder="email@avaya.com" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">PHONE / MOBILE (OPTIONAL)</label>
+          <input type="text" id="usrPhone" placeholder="+91 / E.164 format" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">CREATE TEMPORARY PASSWORD *</label>
+          <input type="password" id="usrPassword" placeholder="Initial Password" style="width:100%; padding:9px; border:1px solid var(--slate-100); border-radius:6px;">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--slate-500);">ASSIGNED CUSTOMERS (MULTIPLE SELECT)</label>
+          <select id="usrCustomerSelect" multiple style="width:100%; padding:6px; border:1px solid var(--slate-100); border-radius:6px; height:80px;">
+            ` + selectOpts + `
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="adminProvisionNewUser()">Register User (Forces First Login Password Change)</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-label">Registered Users & Customer Allocations</div></div>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left; font-size:11px; color:var(--slate-500); border-bottom:1px solid var(--slate-100);">
+            <th style="padding:6px;">USER DETAILS</th>
+            <th style="padding:6px;">ROLE</th>
+            <th style="padding:6px;">ASSIGNED CUSTOMERS</th>
+          </tr>
+        </thead>
+        <tbody>
+          ` + userRows + `
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function adminProvisionNewUser() {
+  const fName = document.getElementById("usrFirstName").value.trim();
+  const lName = document.getElementById("usrLastName").value.trim();
+  const email = document.getElementById("usrEmail").value.trim();
+  const phone = document.getElementById("usrPhone").value.trim();
+  const pwd = document.getElementById("usrPassword").value;
+  
+  const selectEl = document.getElementById("usrCustomerSelect");
+  const selectedCustomers = [];
+  for (let i = 0; i < selectEl.options.length; i++) {
+    if (selectEl.options[i].selected) {
+      selectedCustomers.push(selectEl.options[i].value);
+    }
+  }
+
+  let missing = false;
+  if (!fName) missing = true;
+  if (!lName) missing = true;
+  if (!email) missing = true;
+  if (!pwd) missing = true;
+
+  if (missing) {
+    showToast("Fill in required user details."); return;
+  }
+
+  const username = email.split('@')[0];
+
+  USER_DIRECTORY[username] = {
+    id: userIdSeq++,
+    username: username,
+    password: pwd,
+    firstName: fName,
+    lastName: lName,
+    email: email,
+    phone: phone,
+    roleId: "role-sdm",
+    status: "active",
+    mustChangePassword: true,
+    isSuperAdmin: false,
+    mappedCompanies: selectedCustomers
+  };
+
+  showToast("Registered User " + fName + " " + lName + ". User will be forced to change password at first login.");
+  renderMain();
+}
+
+function adminUnmapCompany(username, companyName) {
+  const usr = USER_DIRECTORY[username];
+  let newMaps = [];
+  usr.mappedCompanies.forEach(c => {
+    if (c !== companyName) newMaps.push(c);
+  });
+  usr.mappedCompanies = newMaps;
+  showToast("Unmapped " + companyName + " from " + usr.firstName);
+  renderMain();
+}
+
+// Guaranteed App Boot Sequence
+renderAuthScreen();
+
+</script>
+</body>
+</html>
